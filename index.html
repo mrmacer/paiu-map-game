@@ -152,7 +152,8 @@
 
       if (this.id.toLowerCase() === current.toLowerCase()) {
         score++;
-        this.classList.add('correct');
+       playSound('correct');   // ← added 
+       this.classList.add('correct');
         this.style.pointerEvents = 'none';
         document.getElementById('feedback').style.color = '#1D9E75';
         document.getElementById('feedback').textContent = 'Correct!';
@@ -160,7 +161,8 @@
         updateScore();
         setTimeout(nextQuestion, 600);
       } else {
-        this.classList.add('wrong');
+       playSound('wrong');     // ← added 
+       this.classList.add('wrong');
         document.getElementById('feedback').style.color = '#E24B4A';
         document.getElementById('feedback').textContent = 'Try again';
         setTimeout(() => this.classList.remove('wrong'), 300);
