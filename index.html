@@ -6,17 +6,19 @@
   <title>The Great PAIU Escape</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #fff; color: #111; }
-    #game-title { font-size: 24px; font-weight: 600; text-align: center; padding: 1rem 0 0.5rem; }
-    #app { padding: 1rem; max-width: 960px; margin: 0 auto; }
-    #progress-bar { height: 4px; background: #e5e5e5; border-radius: 2px; margin-bottom: 1rem; overflow: hidden; }
+    html, body { height: 100%; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #fff; color: #111; display: flex; flex-direction: column; overflow: hidden; }
+    #game-title { font-size: 22px; font-weight: 600; text-align: center; padding: 0.6rem 0 0.3rem; flex-shrink: 0; }
+    #app { flex: 1; display: flex; flex-direction: column; padding: 0.6rem 1rem 0.5rem; max-width: 960px; width: 100%; margin: 0 auto; min-height: 0; }
+    #progress-bar { height: 4px; background: #e5e5e5; border-radius: 2px; margin-bottom: 0.6rem; overflow: hidden; flex-shrink: 0; }
     #progress-fill { height: 100%; background: #1D9E75; border-radius: 2px; transition: width 0.3s ease; }
-    #score-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e5e5; }
+    #score-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 0.6rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5; flex-shrink: 0; }
     #prompt-box { font-size: 18px; font-weight: 500; flex: 1; }
     #score-display { font-size: 13px; color: #666; white-space: nowrap; }
-    #feedback { font-size: 14px; font-weight: 500; min-width: 80px; text-align: right; }
-    #map-container { position: relative; width: 100%; max-width: 900px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: #f5f5f5; }
-    #map-container svg { display: block; width: 100%; height: auto; }
+    #timer-display { font-size: 13px; color: #666; white-space: nowrap; font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }
+    #feedback { font-size: 14px; font-weight: 500; min-width: 70px; text-align: right; }
+    #map-container { flex: 1; min-height: 0; position: relative; width: 100%; max-width: 900px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: #f5f5f5; }
+    #map-container svg { display: block; width: 100%; height: 100%; }
     .iu-region { cursor: pointer; stroke: #fff; stroke-width: 1; transition: opacity 0.15s; }
     .iu-region:hover { opacity: 0.75; }
     .iu-region.correct { fill: #1D9E75 !important; pointer-events: none; animation: correctPulse 0.4s ease-out; }
@@ -24,10 +26,20 @@
     .iu-region.wrong { animation: shake 0.3s ease; }
     @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
     .iu-region text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 18px; font-weight: 700; fill: #fff; stroke: rgba(0,0,0,0.5); stroke-width: 3px; paint-order: stroke fill; }
-    #win-screen { display: none; text-align: center; padding: 3rem 1rem; }
-    #win-screen h2 { font-size: 26px; font-weight: 600; margin-bottom: 0.5rem; }
-    #win-screen p { color: #555; font-size: 15px; margin-bottom: 1.5rem; }
-    #restart-btn { padding: 10px 24px; border: 1px solid #ccc; border-radius: 6px; background: transparent; color: #111; cursor: pointer; font-size: 14px; }
+    #win-screen { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1.5rem 1rem; overflow-y: auto; }
+    #win-screen h2 { font-size: 26px; font-weight: 600; margin-bottom: 0.4rem; }
+    #win-screen > p { color: #555; font-size: 14px; margin-bottom: 1rem; }
+    #name-form { margin-bottom: 1.2rem; }
+    #name-form input { padding: 7px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; width: 180px; margin-right: 6px; outline: none; }
+    #name-form input:focus { border-color: #1D9E75; }
+    #name-form button { padding: 7px 16px; border: none; border-radius: 6px; background: #1D9E75; color: #fff; cursor: pointer; font-size: 14px; }
+    #name-form button:hover { background: #178a63; }
+    #leaderboard { width: 100%; max-width: 420px; margin: 0 auto 1.2rem; }
+    #leaderboard h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin-bottom: 0.5rem; }
+    #leaderboard-list { list-style: none; }
+    #leaderboard-list li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    #leaderboard-list li.top { font-weight: 600; color: #1D9E75; }
+    #restart-btn { padding: 9px 22px; border: 1px solid #ccc; border-radius: 6px; background: transparent; color: #111; cursor: pointer; font-size: 14px; }
     #restart-btn:hover { background: #f0f0f0; }
   </style>
 </head>
@@ -40,11 +52,12 @@
   <div id="score-bar">
     <div id="prompt-box">Click on: <strong id="target-label">—</strong></div>
     <div id="score-display">Score: <strong id="score">0</strong> / <span id="total">0</span></div>
+    <div id="timer-display">0:00</div>
     <div id="feedback"></div>
   </div>
 
   <div id="map-container">
-    <svg viewBox="-115 -151 999 751" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;" xmlns="http://www.w3.org/2000/svg" id="paiu-map">
+    <svg viewBox="-5 30 975 570" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;" xmlns="http://www.w3.org/2000/svg" id="paiu-map">
       <g id="iu29" class="iu-region" fill="#ff6600"><path d="m 628.08652,380.01648 8.58452,8.58452 -17.55924,9.75513 3.51185,5.85309 23.9276,-5.27278 1.43575,-0.1901 -31.60664,24.58294 2.39125,5.26277 35.80385,-23.28727 16.43366,11.78121 65.16426,-21.07109 6.2433,-12.09637 35.1185,-19.90047 -37.8499,-37.84993 -5.4629,2.73144 -29.2654,-12.09636 -11.31595,15.21801 -0.63534,13.49711 -3.9771,-5.95814 -14.47262,2.73144 3.86705,13.53212 z" /></g>
       <g id="iu14" class="iu-region" fill="#ff9955"><path d="m 754.87075,377.35408 -15.58721,8.90203 -5.37847,9.87479 -14.89114,3.90657 -17.24899,6.53061 -14.93993,5.87682 -15.6631,5.11188 87.74994,72.07767 -8.77747,6.7968 2.44625,13.56747 14.52188,-2.39644 9.13174,-12.66713 -5.60048,-11.95618 18.29786,-15.45599 9.61294,-14.05174 18.13543,10.05383 10.21861,-13.57064 -21.55929,-20.71842 -5.99547,1.61516 7.09851,-13.27317 -9.90461,-6.15937 z" /></g>
       <g id="iu13" class="iu-region" fill="#ff8080"><path d="m 651.60734,403.77927 -22.67001,17.07611 18.25378,57.11666 -24.14209,15.89845 9.4213,12.36546 17.95936,2.94416 28.26391,34.74106 25.02534,32.97456 20.02027,-0.58883 11.48222,-15.89845 5.88831,-15.89845 -10.87483,-17.1524 17.48444,-5.63171 2.8117,-10.48487 -1.17767,-17.37053 8.83248,-5.00507 -44.7512,-36.50755 z" /></g>
@@ -79,7 +92,15 @@
 
   <div id="win-screen">
     <h2>You nailed it!</h2>
-    <p>All <span id="win-total"></span> IUs identified — <span id="win-score"></span> correct on first try.</p>
+    <p>All <span id="win-total"></span> IUs identified — <strong id="win-score"></strong> correct out of <span id="win-attempts"></span> tries in <strong id="win-time"></strong>.</p>
+    <div id="name-form">
+      <input type="text" id="player-name" placeholder="Your name" maxlength="20" />
+      <button id="save-score-btn">Save Score</button>
+    </div>
+    <div id="leaderboard">
+      <h3>High Scores</h3>
+      <ol id="leaderboard-list"></ol>
+    </div>
     <button id="restart-btn" onclick="initGame()">Play again</button>
   </div>
 </div>
@@ -87,6 +108,7 @@
 <script>
   const IU_COUNT = 29;
   let queue = [], score = 0, attempts = 0, current = null;
+  let gameTime = 0, timerInterval = null;
 
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -116,6 +138,16 @@
     document.getElementById('score-bar').style.display = 'flex';
     document.getElementById('progress-bar').style.display = 'block';
 
+    clearInterval(timerInterval);
+    gameTime = 0;
+    document.getElementById('timer-display').textContent = '0:00';
+    timerInterval = setInterval(() => {
+      gameTime++;
+      const m = Math.floor(gameTime / 60);
+      const s = gameTime % 60;
+      document.getElementById('timer-display').textContent = m + ':' + String(s).padStart(2, '0');
+    }, 1000);
+
     updateScore();
     nextQuestion();
   }
@@ -135,14 +167,55 @@
     document.getElementById('progress-fill').style.width = pct + '%';
   }
 
+  function formatTime(secs) {
+    return Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
+  }
+
+  function loadScores() {
+    try { return JSON.parse(localStorage.getItem('paiu_scores') || '[]'); }
+    catch { return []; }
+  }
+
+  function renderLeaderboard() {
+    const scores = loadScores();
+    const list = document.getElementById('leaderboard-list');
+    if (scores.length === 0) {
+      list.innerHTML = '<li style="color:#aaa;justify-content:center">No scores yet — be the first!</li>';
+    } else {
+      list.innerHTML = scores.map((s, i) =>
+        `<li class="${i === 0 ? 'top' : ''}">
+          <span>${i + 1}. ${s.name}</span>
+          <span>${s.score}/${IU_COUNT} &nbsp;·&nbsp; ${formatTime(s.time)} &nbsp;·&nbsp; ${s.attempts} tries</span>
+        </li>`
+      ).join('');
+    }
+  }
+
   function showWin() {
+    clearInterval(timerInterval);
     document.getElementById('map-container').style.display = 'none';
     document.getElementById('score-bar').style.display = 'none';
     document.getElementById('progress-bar').style.display = 'none';
     document.getElementById('win-total').textContent = IU_COUNT;
     document.getElementById('win-score').textContent = score;
+    document.getElementById('win-attempts').textContent = attempts;
+    document.getElementById('win-time').textContent = formatTime(gameTime);
     document.getElementById('progress-fill').style.width = '100%';
-    document.getElementById('win-screen').style.display = 'block';
+    document.getElementById('player-name').value = '';
+    renderLeaderboard();
+    document.getElementById('win-screen').style.display = 'flex';
+
+    document.getElementById('save-score-btn').onclick = function () {
+      const name = document.getElementById('player-name').value.trim() || 'Anonymous';
+      const scores = loadScores();
+      scores.push({ name, score, attempts, time: gameTime, date: new Date().toLocaleDateString() });
+      scores.sort((a, b) => b.score - a.score || a.time - b.time || a.attempts - b.attempts);
+      scores.splice(10);
+      localStorage.setItem('paiu_scores', JSON.stringify(scores));
+      this.textContent = 'Saved!';
+      this.disabled = true;
+      renderLeaderboard();
+    };
   }
 
   document.querySelectorAll('.iu-region').forEach(region => {
