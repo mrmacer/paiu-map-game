@@ -19,9 +19,11 @@
     #map-container svg { display: block; width: 100%; height: auto; }
     .iu-region { cursor: pointer; stroke: #fff; stroke-width: 1; transition: opacity 0.15s; }
     .iu-region:hover { opacity: 0.75; }
-    .iu-region.correct { fill: #1D9E75 !important; pointer-events: none; }
+    .iu-region.correct { fill: #1D9E75 !important; pointer-events: none; animation: correctPulse 0.4s ease-out; }
+    @keyframes correctPulse { 0%{opacity:1} 40%{opacity:0.6;filter:brightness(1.5)} 100%{opacity:1} }
     .iu-region.wrong { animation: shake 0.3s ease; }
     @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+    .iu-region text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 18px; font-weight: 700; fill: #fff; stroke: rgba(0,0,0,0.5); stroke-width: 3px; paint-order: stroke fill; }
     #win-screen { display: none; text-align: center; padding: 3rem 1rem; }
     #win-screen h2 { font-size: 26px; font-weight: 600; margin-bottom: 0.5rem; }
     #win-screen p { color: #555; font-size: 15px; margin-bottom: 1.5rem; }
@@ -96,6 +98,7 @@
 
   function initGame() {
     const regions = Array.from(document.querySelectorAll('.iu-region'));
+    document.querySelectorAll('.iu-region text').forEach(t => t.remove());
     regions.forEach(r => {
       r.classList.remove('correct', 'wrong');
       const origFill = r.getAttribute('data-orig-fill') || r.getAttribute('fill');
@@ -150,14 +153,17 @@
 
       if (this.id.toLowerCase() === current.toLowerCase()) {
         score++;
+        playSound('correct');
         this.classList.add('correct');
         this.style.pointerEvents = 'none';
+        addLabel(this);
         document.getElementById('feedback').style.color = '#1D9E75';
         document.getElementById('feedback').textContent = 'Correct!';
         queue.shift();
         updateScore();
         setTimeout(nextQuestion, 600);
       } else {
+        playSound('wrong');
         this.classList.add('wrong');
         document.getElementById('feedback').style.color = '#E24B4A';
         document.getElementById('feedback').textContent = 'Try again';
@@ -165,6 +171,52 @@
       }
     });
   });
+
+  function playSound(type) {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (type === 'correct') {
+      [[523, 0, 0.12], [784, 0.12, 0.25], [1047, 0.22, 0.45]].forEach(([freq, start, end]) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = 'sine'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.35, ctx.currentTime + start);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + end);
+        o.start(ctx.currentTime + start); o.stop(ctx.currentTime + end);
+      });
+      const bufSize = ctx.sampleRate * 0.4;
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufSize) * 0.15;
+      const src = ctx.createBufferSource();
+      src.buffer = buf; src.connect(ctx.destination);
+      src.start(ctx.currentTime + 0.05);
+    } else {
+      [[300, 0, 0.15], [220, 0.15, 0.35], [160, 0.3, 0.55]].forEach(([freq, start, end]) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = 'sawtooth'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.25, ctx.currentTime + start);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + end);
+        o.start(ctx.currentTime + start); o.stop(ctx.currentTime + end);
+      });
+    }
+  }
+
+  function addLabel(groupEl) {
+    const num = groupEl.id.replace(/^iu/i, '');
+    const bb = groupEl.getBBox();
+    const cx = bb.x + bb.width / 2;
+    const cy = bb.y + bb.height / 2;
+    const ns = 'http://www.w3.org/2000/svg';
+    const text = document.createElementNS(ns, 'text');
+    text.setAttribute('x', cx);
+    text.setAttribute('y', cy);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'central');
+    text.setAttribute('pointer-events', 'none');
+    text.textContent = num;
+    groupEl.appendChild(text);
+  }
 
   initGame();
 </script>
